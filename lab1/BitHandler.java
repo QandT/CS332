@@ -38,42 +38,60 @@ public class BitHandler extends Thread {
 	/**
 	 * Turn the light system on (if it isn't already), then wait half a period. Then
 	 * turn the light off, for half a period.
+	 * 
+	 * @throws CollisionException when a collision occurs
 	 */
-	public void broadcastZero() {
-		if (!panel.isOn()){
-			panel.switchOn();
-		}
-		pause(HALFTIME);
-		panel.switchOff();
-		pause(HALFTIME);
+	public void broadcastZero() throws CollisionException {
+			if (!panel.isOn()) {
+				panel.switchOn();
+			}
+			pause(HALFTIME);
+			if (!panel.isOn()) {
+				throw new CollisionException();
+			}
+			panel.switchOff();
+			pause(HALFTIME);
+			if (panel.isOn()) {
+				throw new CollisionException();
+			}
 	}
 
 	/**
 	 * Turn the light system off (if it isn't already), then wait half a period.
 	 * Then turn the light on, for half a period.
+	 * 
+	 * @throws CollisionException when a collision occurs
 	 */
-	public void broadcastOne() {
-		if (panel.isOn()){
-			panel.switchOff();
-		}
-		pause(HALFTIME);
-		panel.switchOn();
-		pause(HALFTIME);
+	public void broadcastOne() throws CollisionException {
+			if (panel.isOn()) {
+				panel.switchOff();
+			}
+			pause(HALFTIME);
+			if (panel.isOn()) {
+				throw new CollisionException();
+			}
+			panel.switchOn();
+			pause(HALFTIME);
+			if (!panel.isOn()) {
+				throw new CollisionException();
+			}
 	}
 
 	/**
 	 * Given a string of bits (0s and 1s), send each bit using broadcastOne/Zero().
 	 * Build up a string of successfully sent bits (called "broadcasted"). Switch
 	 * the light off when done.
+	 * 
+	 * @throws CollisionException when a collision occurs
 	 */
-	public void broadcast(String bits) {
-		for(int i = 0; i < bits.length(); i++) {
+	public void broadcast(String bits) throws CollisionException {
+		for (int i = 0; i < bits.length(); i++) {
 			if (bits.charAt(i) == '0') {
 				broadcastZero();
 			} else if (bits.charAt(i) == '1') {
 				broadcastOne();
 			} else {
-				//Shouldnt get here
+				// Shouldnt get here
 				System.out.println("Error broadcasting");
 			}
 		}

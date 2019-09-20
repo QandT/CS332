@@ -28,8 +28,12 @@ public class BitDisplay implements ActionListener, BitListener {
 	public void actionPerformed(ActionEvent e) {
 		new Thread() {
 			public void run() {
-				handler.broadcast(sendField.getText());
-				// System.out.println("actionPerformed: done sending " + sendField.getText());
+				try {
+					handler.broadcast(sendField.getText());
+					// System.out.println("actionPerformed: done sending " + sendField.getText());
+				} catch (CollisionException x) {
+					receiveField.setText("Collision!");
+				}
 			}
 		}.start();
 		sendField.selectAll();
