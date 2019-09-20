@@ -1,5 +1,15 @@
 import java.lang.Character.*;
 
+/**
+ * This class implements a BitHandler that receives a string of
+ * 1s and 0s from a BitListener and sends that information along to
+ * the LightPanel it is associated with which in turn broadcasts it
+ * to the rest of the LightPanels connected to the LightSystem
+ *
+ * @author: Professor Norman
+ * @author: Quentin Barnes
+ * @author: Ty Vredeveld
+ */
 public class BitHandler extends Thread {
 	public static final int HALFPERIOD = 150;
 
@@ -16,15 +26,34 @@ public class BitHandler extends Thread {
 
 	public static final int HALFTIME = 500;
 
+	/**
+	 * Default constructor that creates a BitHandler using
+	 * localhost and the default port
+	 */
 	public BitHandler() {
 		this("localhost", LightSystem.DEFAULT_PORT);
 	}
 
+	/**
+	 * Explicit constructor that creates a LightPanel using
+	 * a given host name and port, then starts running the BitHandler
+	 *
+	 * @param host host the LightSystem is running on that the
+	 *             LightPanel connects to
+	 * @param port port the LightSystem is running on that the
+	 *             LightPanel connects to
+	 */
 	public BitHandler(String host, int port) {
 		panel = new LightPanel(host, port);
 		start();
 	}
 
+	/**
+	 * Wait a given amount of time; used to distinguish between
+	 * bits that are sent and received
+	 *
+	 * @param millisenconds amount of time to pause the thread
+	 */
 	public static void pause(int milliseconds) {
 		try {
 			Thread.sleep(milliseconds);
@@ -80,6 +109,11 @@ public class BitHandler extends Thread {
 		panel.switchOff();
 	}
 
+	/**
+	 * Return the ID of the LightPanel the BitHandler is tied to
+	 *
+	 * @return the ID of the LightPanel the BitHandler is associated with
+	 */
 	public String toString() {
 		return panel.toString();
 	}
@@ -173,18 +207,39 @@ public class BitHandler extends Thread {
 		}
 	}
 
+	/**
+	 * Explicitly set the reference to a given BitListener
+	 *
+	 * @param l BitListener we want to reference
+	 */
 	public void setListener(BitListener l) {
 		listener = l;
 	}
 
+	/**
+	 * Returns if the listener is not receiving anything
+	 *
+	 * @return if the BitListener's state == SILENCE
+	 */
 	public boolean isSilent() {
 		return state.equals(SILENCE);
 	}
 
+	/**
+	 * Returns the ID of the LightPanel (in integer form)
+	 *
+	 * @return the associated LightPanel ID (integer)
+	 */
 	public int getID() {
 		return panel.getID();
 	}
 
+	/**
+	 * Notify the user that the BitHandler has received bits
+	 * from somewhere
+	 *
+	 * @param bits the string of 0s and 1s that the BitHandler received
+	 */
 	private void notifyReceived(final String bits) {
 		if (listener == null)
 			return;
