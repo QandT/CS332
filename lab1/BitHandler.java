@@ -11,7 +11,7 @@ import java.lang.Character.*;
  * @author: Ty Vredeveld
  */
 public class BitHandler extends Thread {
-	public static final int HALFPERIOD = 500;
+	public static final int HALFPERIOD = 5;
 
 	private static final String SILENCE = "SILENCE";
 	private static final String EXPECT_ZERO = "EXPECT_ZERO";

@@ -2,7 +2,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class Test {
+public class TestServer {
     public static void main(String[] args) {
         LightSystem system = new LightSystem();
         LightDisplay d1 = new LightDisplay(new LightPanel());
