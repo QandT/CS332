@@ -14,6 +14,12 @@ public class BitDisplay implements ActionListener, BitListener {
 	private JTextField receiveField;
 	private JTextField sendField;
 
+	/**
+	 * Explicit constructor that creates the UI elements for the BitDisplay and
+	 * connects the BitDisplay to the given BitHandler
+	 *
+	 * @param handler BitHandler the BitDisplay references and is connected to
+	 */
 	public BitDisplay(BitHandler handler) {
 		this.handler = handler;
 

@@ -69,7 +69,7 @@ public class BitHandler extends Thread {
 	 * @throws CollisionException when a collision occurs
 	 */
 	public void broadcastZero() throws CollisionException {
-		System.out.println(getID() + " Broadcasting: 0");
+		// System.out.println(getID() + " Broadcasting: 0");
 			if (!panel.isOn()) {
 				panel.switchOn();
 			}
@@ -91,7 +91,7 @@ public class BitHandler extends Thread {
 	 * @throws CollisionException when a collision occurs
 	 */
 	public void broadcastOne() throws CollisionException {
-		System.out.println(getID() + " Broadcasting: 1");
+		// System.out.println(getID() + " Broadcasting: 1");
 			if (panel.isOn()) {
 				panel.switchOff();
 			}
