@@ -8,7 +8,7 @@
  */
 public class L2Handler implements BitListener {
 	private BitHandler handler;
-	//private Layer2Listener layer2listener;
+	// private Layer2Listener layer2listener;
 	private int macAddr;
 
 	public L2Handler(String host, int port, int addr) {
@@ -18,9 +18,7 @@ public class L2Handler implements BitListener {
 	}
 
 	public L2Handler(int addr) {
-		handler = new BitHandler();
-		handler.setListener(this);
-		macAddr = addr;
+		this("localhost", LightSystem.DEFAULT_PORT, addr);
 	}
 
 	public int getMACAddress() {
@@ -51,5 +49,18 @@ public class L2Handler implements BitListener {
 			x *= 2;
 		}
 		return output;
+	}
+
+	public void send(L2Frame frame) {
+		while (true) {
+			handler.pause(BitHandler.HALFPERIOD);
+			if (handler.isSilent()) {
+				try {
+					handler.broadcast(frame.toString());
+				} catch (CollisionException ex) {
+					System.out.println(ex);
+				}
+			}
+		}
 	}
 }

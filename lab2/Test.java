@@ -7,8 +7,8 @@ public class Test {
 		// BitDisplay b = new BitDisplay(new BitHandler());
 		// BitDisplay b2 = new BitDisplay(new BitHandler());
 
-		Step1Tests();
-		Step2Tests();
+		// Step1Tests();
+		// Step2Tests();
 		Step3Tests();
 		Step4Tests();
 		Step5Tests();		
@@ -18,14 +18,14 @@ public class Test {
 	// step 1 of the assignment
 	public static void Step1Tests() {
 		try {
-			L2Frame f1 = new L2Frame(12, 9, 3, 2, "test");
+			L2Frame f1 = new L2Frame(12, 9, 3, 2, "100110");
 			assert(f1.getDestAddr() == 12);
 			assert(f1.getSrcAddr() == 9);
 			assert(f1.getType() == 3);
 			assert(f1.getVLANID() == 2);
 			assert(f1.getPayload().equals("test"));
 			assert(f1.getPayloadSize() == "test".length());
-			assert(f1.toString().equals("011001001111000000100101110100011001010111001101110100"));
+			assert(f1.toString().equals("0110010011110000001001100110"));
 		} catch (Exception ex) {
 			System.out.println(ex);
 		}
@@ -115,7 +115,8 @@ public class Test {
 	// perform tests to guarantee the correctness of
 	// step 3 of the assignment
 	public static void Step3Tests() {
-
+		L2Frame f1 = new L2Frame(12, 9, 3, 2, "100110");
+		System.out.println(f1.toDecimal("01101", 5));
 	}
 
 	// perform tests to guarantee the correctness of
