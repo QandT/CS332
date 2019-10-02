@@ -32,19 +32,18 @@ public class L2Handler implements BitListener {
 	}
 
 	/**
-	 * Conversion method that takes an integer and the number of bits
-	 * to be used for the conversion (i.e. the number of bits assigned
-	 * to the field determined by our protocol) and returns a string 
-	 * that is a binary representation of the given input
+	 * Conversion method that takes the MAC address and the number
+	 * of bits to be used for the conversion (i.e. the number of bits
+	 * assigned to the field determined by our protocol) and returns
+	 * a string that is a binary representation of the MAC address
 	 *
-	 * @param input the integer to be converted to binary
 	 * @param bitLength the number of bits to be used when converting
 	 */
-	private String toString(int input, int bitLength) {
+	public String toString(int bitLength) {
 		String output = "";
 		int x = 2;
 		for (int i = 0; i < bitLength; i++) {
-			if (input % x >= x/2) {
+			if (macAddr % x >= x/2) {
 				output = "1" + output;
 			} else {
 				output = "0" + output;

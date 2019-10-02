@@ -146,9 +146,9 @@ public class L2Frame {
 	 * 2 frame object that is being represented
 	 */
 	public String toString() {
-		return "0 " + toBinary(destAddr, 4) + " " + toBinary(srcAddr, 4)
-			+ " " + toBinary(type, 2) + " " + toBinary(vlanID, 2)
-			+ " " + toBinary(payloadSize, 8) + " " + toBinary(checksum, 1)
-			+ " " + toBinary(payload);				
+		return "0" + toBinary(destAddr, 4) + toBinary(srcAddr, 4)
+			+ toBinary(type, 2) + toBinary(vlanID, 2)
+			+ toBinary(payloadSize, 8) + toBinary(checksum, 1)
+			+ toBinary(payload);				
 	}
 }
