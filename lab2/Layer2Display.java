@@ -1,6 +1,14 @@
 import java.awt.event.*;
 import javax.swing.*;
 
+/**
+ * This class implements a layer 2 display that is responsible for
+ * displaying received layer 2 frames and providing an interface for
+ * users to create and send layer 2 frames
+ *
+ * @author: Quentin Barnes
+ * @author: Ty Vredeveld
+ */
 public class Layer2Display implements ActionListener, Layer2Listener
 {
     private L2Handler handler;
