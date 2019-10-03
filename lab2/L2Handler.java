@@ -8,7 +8,7 @@
  */
 public class L2Handler implements BitListener {
 	private BitHandler handler;
-	// private Layer2Listener layer2listener;
+	private Layer2Listener layer2listener;
 	private int macAddr;
 
 	public L2Handler(String host, int port, int addr) {
@@ -25,8 +25,25 @@ public class L2Handler implements BitListener {
 		return macAddr;
 	}
 
+	public void setListener(Layer2Listener l) {
+		layer2listener = l;
+	}
+
+	/**
+	 * When an L2Handler receives a string of bits, create a new frame from
+	 * it, check if the frame's destination matches the handler's MAC
+	 * address, and if it does pass it up to the layer 2 listener
+	 *
+	 * @param handler the BitHandler the L2Handler is receiving bits from
+	 * @param bits the string of bits the L2Handler is receiving
+	 */
 	public void bitsReceived(BitHandler handler, String bits) {
-		// maybe do something here?
+		L2Frame newFrame = new L2Frame(bits);
+		if (newFrame.getDestAddr() == macAddr) {
+			if (layer2listener != null) {
+				layer2listener.frameReceived(this, newFrame);
+			}
+		}
 	}
 
 	/**
@@ -37,20 +54,15 @@ public class L2Handler implements BitListener {
 	 *
 	 * @param bitLength the number of bits to be used when converting
 	 */
-	public String toString(int bitLength) {
-		String output = "";
-		int x = 2;
-		for (int i = 0; i < bitLength; i++) {
-			if (macAddr % x >= x/2) {
-				output = "1" + output;
-			} else {
-				output = "0" + output;
-			}
-			x *= 2;
-		}
-		return output;
+	public String toString() {
+		return "#" + Integer.toString(macAddr);
 	}
 
+	/**
+	 * Sends out an L2Frame when the handler is silent
+	 *
+	 * @param frame the L2Frame desired to be sent out
+	 */
 	public void send(L2Frame frame) {
 		while (true) {
 			handler.pause(BitHandler.HALFPERIOD);

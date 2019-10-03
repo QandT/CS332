@@ -52,7 +52,7 @@ public class L2Frame {
 	}
 
 	public L2Frame(String bitString) {
-		if (bitString[0] != '0') {
+		if (bitString.charAt(0) != '0') {
 			throw new IllegalArgumentException("Illegal frame - must start with 0");
 		}
 

@@ -1,5 +1,5 @@
 public class BitHandler extends Thread {
-	public static final int HALFPERIOD = 150;
+	public static final int HALFPERIOD = 50;
 
 	private static final String SILENCE = "SILENCE";
 	private static final String EXPECT_ZERO = "EXPECT_ZERO";

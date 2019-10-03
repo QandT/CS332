@@ -9,9 +9,7 @@ public class Test {
 
 		// Step1Tests();
 		// Step2Tests();
-		Step3Tests();
-		Step4Tests();
-		Step5Tests();		
+		Step3and4and5Tests();		
 	}
 
 	// perform tests to guarantee the correctness of
@@ -31,8 +29,8 @@ public class Test {
 		}
 
 		try {
-			L2Frame f2 = new L2Frame(15, 9, 3, 2, "test");
-			System.out.println("Cannot have a destination address larger than 14");
+			L2Frame f2 = new L2Frame(16, 9, 3, 2, "test");
+			System.out.println("Cannot have a destination address larger than 15");
 		} catch (Exception ex) {
 			
 		}
@@ -95,8 +93,7 @@ public class Test {
 		try {
 			L2Handler h1 = new L2Handler("localhost", 9223, 1);
 			assert(h1.getMACAddress() == 1);
-			assert(h1.toString(2).equals("01"));
-			assert(h1.toString(4).equals("0001"));
+			assert(h1.toString().equals("#1"));
 		} catch (Exception ex) {
 			System.out.println(ex);
 		}
@@ -104,7 +101,7 @@ public class Test {
 		try {
 			L2Handler h1 = new L2Handler(14);
 			assert(h1.getMACAddress() == 14);
-			assert(h1.toString(4).equals("1110"));
+			assert(h1.toString().equals("#14"));
 		} catch (Exception ex) {
 			System.out.println(ex);
 		}
@@ -113,21 +110,10 @@ public class Test {
 	}
 
 	// perform tests to guarantee the correctness of
-	// step 3 of the assignment
-	public static void Step3Tests() {
-		L2Frame f1 = new L2Frame(12, 9, 3, 2, "100110");
-		System.out.println(f1.toDecimal("01101", 5));
-	}
-
-	// perform tests to guarantee the correctness of
-	// step 4 of the assignment
-	public static void Step4Tests() {
-
-	}
-
-	// perform tests to guarantee the correctness of
-	// step 5 of the assignment
-	public static void Step5Tests() {
-
+	// steps 3, 4, and 5 of the assignment
+	public static void Step3and4and5Tests() {
+		Layer2Display d1 = new Layer2Display(new L2Handler(12));
+		Layer2Display d2 = new Layer2Display(new L2Handler(14));
+		Layer2Display d3 = new Layer2Display(new L2Handler(9));
 	}
 }

@@ -1,50 +1,76 @@
-// import java.awt.event.*;
-// import javax.swing.*;
+import java.awt.event.*;
+import javax.swing.*;
 
-// public class Layer2Display implements ActionListener, Layer2Listener
-// {
-//     private L2Handler handler;
-//     private JTextField displayField;
-//     private JTextField addressField;
-//     private JTextField payloadField;
+public class Layer2Display implements ActionListener, Layer2Listener
+{
+    private L2Handler handler;
+    private JTextField displayFieldFull;
+    private JTextField displayFieldAddress;
+    private JTextField displayFieldPayload;
+    private JTextField addressField;
+    private JTextField payloadField;
 
-//     public Layer2Display(L2Handler handler) {
-// 		this.handler = handler;
-// 		handler.setListener(this);
+    public Layer2Display(L2Handler handler) {
+		this.handler = handler;
+		handler.setListener(this);
 
-// 		JFrame frame = new JFrame(handler.toString());
-// 		frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(),
-// 							       BoxLayout.PAGE_AXIS));
+		JFrame frame = new JFrame(handler.toString());
+		frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(),
+							       BoxLayout.PAGE_AXIS));
 
-// 		displayField = new JTextField(20);
-// 		displayField.setEditable(false);
-// 		frame.getContentPane().add(displayField);
+		frame.getContentPane().add(new JLabel("Full message:"));
 
-// 		frame.getContentPane().add(new JLabel("Address:"));
+		displayFieldFull = new JTextField(20);
+		displayFieldFull.setEditable(false);
+		frame.getContentPane().add(displayFieldFull);
 
-// 		addressField = new JTextField(20);
-// 		addressField.addActionListener(this);
-// 		frame.getContentPane().add(addressField);
+		frame.getContentPane().add(new JLabel("Address Received From:"));
 
-// 		frame.getContentPane().add(new JLabel("Payload:"));
+		displayFieldAddress = new JTextField(20);
+		displayFieldAddress.setEditable(false);
+		frame.getContentPane().add(displayFieldAddress);
 
-// 		payloadField = new JTextField(20);
-// 		payloadField.addActionListener(this);
-// 		frame.getContentPane().add(payloadField);
+		frame.getContentPane().add(new JLabel("Recived Payload:"));
 
-// 		frame.pack();
-// 		frame.setVisible(true);
-//     }
+		displayFieldPayload = new JTextField(20);
+		displayFieldPayload.setEditable(false);
+		frame.getContentPane().add(displayFieldPayload);
 
-//     public void actionPerformed(ActionEvent e) {
-// 		displayField.setText("Sending...");
-// 		new Thread()
-// 		{
-// 		    public void run()
-// 		    {
-// 				handler.send(new L2Frame(/*add a bunch of field.getText here*/));
-// 		    }
-// 		}.start();
-//     }
+		frame.getContentPane().add(new JLabel("Destination Address:"));
 
-// }
+		addressField = new JTextField(20);
+		addressField.addActionListener(this);
+		frame.getContentPane().add(addressField);
+
+		frame.getContentPane().add(new JLabel("Payload:"));
+
+		payloadField = new JTextField(20);
+		payloadField.addActionListener(this);
+		frame.getContentPane().add(payloadField);
+
+		frame.pack();
+		frame.setVisible(true);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+		displayFieldFull.setText("Sending...");
+		new Thread()
+		{
+		    public void run()
+		    {
+				handler.send(new L2Frame(Integer.parseInt(addressField.getText()), 
+										handler.getMACAddress(),
+										0,
+										0,
+										payloadField.getText()));
+		    }
+		}.start();
+    }
+
+    public void frameReceived(L2Handler h, L2Frame f) {
+    	displayFieldFull.setText(f.toString());
+    	displayFieldAddress.setText(Integer.toString(f.getSrcAddr()));
+    	displayFieldPayload.setText(f.getPayload());
+    }
+
+}
