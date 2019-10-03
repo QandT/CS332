@@ -1,6 +1,6 @@
 public class Test {
 	public static void main(String[] args) {
-		// LightSystem system = new LightSystem();
+		LightSystem system = new LightSystem();
 		// LightDisplay d1 = new LightDisplay(new LightPanel());
 		// LightDisplay d2 = new LightDisplay(new LightPanel());
 
@@ -112,8 +112,8 @@ public class Test {
 	// perform tests to guarantee the correctness of
 	// steps 3, 4, and 5 of the assignment
 	public static void Step3and4and5Tests() {
-		Layer2Display d1 = new Layer2Display(new L2Handler("153.106.116.79", 9223, 1));
-		Layer2Display d2 = new Layer2Display(new L2Handler("153.106.116.79", 9223, 6));
-		Layer2Display d3 = new Layer2Display(new L2Handler("153.106.116.79", 9223, 4));
+		Layer2Display d1 = new Layer2Display(new L2Handler(1));
+		Layer2Display d2 = new Layer2Display(new L2Handler(6));
+		Layer2Display d3 = new Layer2Display(new L2Handler(4));
 	}
 }
