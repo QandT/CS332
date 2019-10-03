@@ -67,6 +67,12 @@ public class Layer2Display implements ActionListener, Layer2Listener
 		}.start();
     }
 
+	/**
+	 * Handles a received frame and displays its contents
+	 *
+	 * @param h the L2Handler that passed the display the frame
+	 * @param f the frame that is passed to the display
+	 */
     public void frameReceived(L2Handler h, L2Frame f) {
     	displayFieldFull.setText(f.toString());
     	displayFieldAddress.setText(Integer.toString(f.getSrcAddr()));
