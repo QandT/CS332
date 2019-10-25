@@ -3,15 +3,9 @@ from socket import*
 import sys
 import argparse
 
-HOST = '153.106.116.93'
-PORT = 65432
-name = gethostname() + ': '
-sendQueue = []
-outputsNum = []
-
 parser = argparse.ArgumentParser(description="A prattle client")
 
-parser.add_argument("-n", "--name", dest="name", help="name to be prepended in messages (default: machine name)")
+parser.add_argument("-n", "--name", dest="name", default=gethostname(), help="name to be prepended in messages (default: machine name)")
 parser.add_argument("-s", "--server", dest="server", default="127.0.0.1",
                     help="server hostname or IP address (default: 127.0.0.1)")
 parser.add_argument("-p", "--port", dest="port", type=int, default=12345,
@@ -20,19 +14,31 @@ parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
                     help="turn verbose output on")
 args = parser.parse_args()
 
+print(args)
+name = args.name
+HOST = args.server
+PORT = args.port
+isVerbose = args.verbose
+
+nameToPrint = name + ': '
+
 s = socket(AF_INET, SOCK_STREAM)
 s.connect((HOST, PORT))
-# s.sendall(b'Hello, world')
-# data = s.recv(1024)
 
-# print('Received', repr(data))
-
-sendQueue.append((name + 'connected').encode())
-outputsNum.append((len(sendQueue) - 1))
+s.sendall((nameToPrint + 'connected').encode())
 
 while True:
+    # print(s)
+    try:
+        if s.getpeername() is None:
+            print("Error Quitting from server crash, its about to be ugly\n")
+    except OSError:
+        print("Server Closed")
+        break
+    # print(s.getpeername())
+        
     socket_list = [sys.stdin, s]
-    read_sockets, write_sockets, error_sockets = select.select(socket_list, outputsNum, [])
+    read_sockets, write_sockets, error_sockets = select.select(socket_list, [], [])
     
     for sock in read_sockets:
         if sock == s:
@@ -43,14 +49,14 @@ while True:
                 print(data.decode())
         else:
             msg = sys.stdin.readline()
-            msg = name + msg
-            sendQueue.append(msg.strip().encode())
-            outputsNum.append((len(sendQueue) - 1))
+            msg = nameToPrint + msg
+            s.sendall(msg.strip().encode())
             
+# <socket.socket fd=3, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('153.106.116.62', 57226), raddr=('153.106.116.62', 65432)>
+# <socket.socket fd=3, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('153.106.116.62', 57222), raddr=('153.106.116.62', 65432)>
+# <socket.socket fd=3, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('153.106.116.62', 57256)>
+
             
-    for place in write_sockets:
-        s.sendall(sendQueue[place])
-        outputsNum.remove(place)
             
             
 
