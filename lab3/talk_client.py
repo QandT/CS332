@@ -54,7 +54,7 @@ while True:
     except OSError:
         if isVerbose:
             print('Detected that the client lost its connection to the server \nand lost the peer name of it, so terminating the program', sys.stdout)
-        print("Server Closed", sys.stdout)
+        print("Server Closed")
         break
     
     #Trys the rest of the code so if there is an error, it can still exit nicely
