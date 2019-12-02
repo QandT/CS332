@@ -1,8 +1,14 @@
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.InetSocketAddress;
-import java.net.DatagramPacket;
 import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.net.SocketException;
+import java.net.PortUnreachableException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 
 /**
  * This class implements a sender
@@ -24,7 +30,7 @@ public class RCMPSender {
         int portNum = 22222;
 
         try {
-            portNum = Integer.parseInt(args[1]); 
+            portNum = Integer.parseInt(args[1]);
         } catch (NumberFormatException e) {
             System.err.println("Cannot convert " + args[1] + " to int to use for port number");
             System.exit(0);
@@ -32,15 +38,23 @@ public class RCMPSender {
 
         String fileName = args[2];
 
-        // open the desired file for writing
+        File openFile = new File(fileName);
+        FileInputStream fin = null;
 
         DatagramSocket socket = null;
 
         try {
+            fin = new FileInputStream(openFile);
             socket = new DatagramSocket();
-            socket.connect(new InetSocketAddress(hostName, portNum));
+            socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), portNum));
         } catch (SocketException e) {
-            System.err.println(String.format("Error creating socket with port number %d: " + e.getMessage(), portNum));
+            System.err.println("Error creating socket with port number " + portNum + ": " + e);
+            System.exit(0);
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found" + e);
+            System.exit(0);
+        } catch (UnknownHostException e) {
+            System.err.println("Host not found" + e);
             System.exit(0);
         }
 
@@ -50,19 +64,28 @@ public class RCMPSender {
         while (true) {
             try {
                 buffer = new byte[1450];
-                String test = "teststringtosendtootherthing";
-                buffer = test.getBytes();
+                fin.read(buffer);
+            } catch (IOException e) {
+                System.err.println("Error receiving data from file: " + e);
+                System.exit(0);
+            }
+
+            try {
                 receivedPacket = new DatagramPacket(buffer, buffer.length);
                 socket.send(receivedPacket);
                 System.out.println(receivedPacket.getData());
                 if (receivedPacket.getLength() < 1450) {
                     break;
                 }
+            } catch (PortUnreachableException e) {
+                System.err.println("Error receiving port: " + e);
+                e.printStackTrace();
+                System.exit(0);
             } catch (IOException e) {
-                System.err.println("Error receiving data from socket: " + e.getMessage());
+                System.err.println("Error receiving data from socket: " + e);
                 System.exit(0);
             }
-            
+
         }
     }
 }
