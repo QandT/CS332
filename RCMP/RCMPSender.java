@@ -46,37 +46,40 @@ public class RCMPSender {
         try {
             fin = new FileInputStream(openFile);
             socket = new DatagramSocket();
-            socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), portNum));
+            // socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), portNum));
         } catch (SocketException e) {
             System.err.println("Error creating socket with port number " + portNum + ": " + e);
             System.exit(0);
         } catch (FileNotFoundException e) {
             System.err.println("File not found" + e);
             System.exit(0);
-        } catch (UnknownHostException e) {
-            System.err.println("Host not found" + e);
-            System.exit(0);
+            // } catch (UnknownHostException e) {
+            // System.err.println("Host not found" + e);
+            // System.exit(0);
         }
 
         byte[] buffer = null;
         DatagramPacket receivedPacket = null;
+        int eof = 1;
+        int i = 0;
 
         while (true) {
             try {
+                Thread.sleep(1);
+                i++;
                 buffer = new byte[1450];
-                fin.read(buffer);
+                eof = fin.read(buffer);
             } catch (IOException e) {
                 System.err.println("Error receiving data from file: " + e);
                 System.exit(0);
+            } catch (InterruptedException e) {
+                System.err.println("Error STOPPING: " + e);
             }
 
             try {
-                receivedPacket = new DatagramPacket(buffer, buffer.length);
+                receivedPacket = new DatagramPacket(buffer, eof, InetAddress.getLocalHost(), portNum);
                 socket.send(receivedPacket);
-                System.out.println(receivedPacket.getData());
-                if (receivedPacket.getLength() < 1450) {
-                    break;
-                }
+                System.out.println(i + " " + eof);
             } catch (PortUnreachableException e) {
                 System.err.println("Error receiving port: " + e);
                 e.printStackTrace();
@@ -86,6 +89,11 @@ public class RCMPSender {
                 System.exit(0);
             }
 
+            if (eof < 1450) {
+                break;
+            }
+
         }
+        socket.close();
     }
 }

@@ -1,7 +1,6 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.DatagramChannel;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -43,39 +42,47 @@ public class RCMPReceiver {
 
 		try {
 			fout = new FileOutputStream(openFile);
-			socket = new DatagramSocket();
+			socket = new DatagramSocket(portNum);
 			// socket.connect(new InetSocketAddress("localhost", portNum));
-			socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), portNum));
+			// socket.connect(new InetSocketAddress(InetAddress.getLocalHost(), portNum));
 		} catch (SocketException e) {
 			System.err.println("Error creating socket with port number " + portNum + ": " + e);
 			System.exit(0);
 		} catch (FileNotFoundException e) {
 			System.err.println("File not found" + e);
 			System.exit(0);
-		} catch (UnknownHostException e) {
-			System.err.println("Host not found" + e);
-			System.exit(0);
+			// } catch (UnknownHostException e) {
+			// System.err.println("Host not found" + e);
+			// System.exit(0);
 		}
 
-		byte[] buffer = null;
-		DatagramPacket receivedPacket = null;
+		byte[] buffer = new byte[1450];
+		int i = 0;
 
 		while (true) {
 			try {
-				buffer = new byte[1450];
-				receivedPacket = new DatagramPacket(buffer, buffer.length);
+				i++;
+				DatagramPacket receivedPacket = new DatagramPacket(buffer, buffer.length);
 				socket.receive(receivedPacket);
-				fout.write(buffer);
-				System.out.println(receivedPacket.getData());
+
+				// System.out.println(new String(receivedPacket.getData()));
 				if (receivedPacket.getLength() < 1450) {
+					for (int j = 0; j < receivedPacket.getLength(); j++) {
+						fout.write(receivedPacket.getData()[j]);
+					}
 					break;
+				} else {
+					fout.write(receivedPacket.getData());
 				}
+				buffer = new byte[1450];
 			} catch (IOException e) {
 				System.err.println("Error receiving data from socket: " + e.getMessage());
 				System.exit(0);
 			}
 
 		}
+
+		socket.close();
 	}
 
 }
