@@ -19,8 +19,8 @@ import java.nio.ByteBuffer;
 public class RCMPReceiver {
 
 	public static final int PACKETSIZE = 1450;
-	public static final int HEADERSIZE = 12;
-	public static final byte[] ACK = "ACK".getBytes();
+	public static final int HEADERSIZE = 13;
+	public static final int ACKSIZE = 8;
 
 	public static void main(String[] args) {
 
@@ -41,8 +41,8 @@ public class RCMPReceiver {
 			System.exit(0);
 		}
 
+		// create a File object and a stream for writing to it
 		String fileName = args[1];
-
 		File openFile = new File(fileName);
 		FileOutputStream fout = null;
 
@@ -53,6 +53,8 @@ public class RCMPReceiver {
 		try {
 			fout = new FileOutputStream(openFile);
 			socket = new DatagramSocket(portNum);
+			// TODO: remove if we don't use
+			// socket.setReceiveBufferSize(212992); // maybe do this if we need to
 		} catch (SocketException e) {
 			System.err.println("Error creating socket with port number " + portNum + ": " + e);
 			System.exit(0);
@@ -61,14 +63,17 @@ public class RCMPReceiver {
 			System.exit(0);
 		}
 
-		byte[] buffer = new byte[PACKETSIZE + HEADERSIZE];
-		ByteBuffer buffBoi = ByteBuffer.wrap(buffer);
+		// set up variables used for packet receiving
+		byte[] buffer = new byte[PACKETSIZE + HEADERSIZE], ackBuffer = new byte[ACKSIZE];
+		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+		ByteBuffer ackByteBuffer = ByteBuffer.wrap(ackBuffer);
 		DatagramPacket receivedPacket = null, ackToSend = null;
 		int portToAck = -1;
 		InetAddress ipToAck = null;
 		int connectionID = -1, packetNum = -1, filesize = -1, bytesRecieved = 0, payloadSize = -1;
+		byte toAck;
 
-		// loop until we get a packet smaller than the defined PACKETSIZE
+		// loop until we have received the complete file
 		while (true) {
 
 			try {
@@ -76,33 +81,42 @@ public class RCMPReceiver {
 				// receive the packet
 				receivedPacket = new DatagramPacket(buffer, buffer.length);
 				socket.receive(receivedPacket);
-				connectionID = buffBoi.getInt();
-				filesize = buffBoi.getInt();
-				packetNum = buffBoi.getInt();
-				payloadSize = receivedPacket.getLength() - HEADERSIZE;
 
+				// extract the header information and payload size info
+				connectionID = byteBuffer.getInt();
+				filesize = byteBuffer.getInt();
+				packetNum = byteBuffer.getInt();
+				toAck = byteBuffer.get();		
+
+				payloadSize = receivedPacket.getLength() - HEADERSIZE;
 				bytesRecieved += payloadSize;
 
-				// create an ACK packet and send it to the
-				// original sender
-				portToAck = receivedPacket.getPort();
-				ipToAck = receivedPacket.getAddress();
-				ackToSend = new DatagramPacket(ACK, ACK.length, ipToAck, portToAck);
-				socket.send(ackToSend);
+				// create an ACK packet and send it to the original sender
+				// if the last packet was marked to be acked
+				if (toAck == (byte)1) {
+					portToAck = receivedPacket.getPort();
+					ipToAck = receivedPacket.getAddress();
+					ackByteBuffer.putInt(connectionID);
+					ackByteBuffer.putInt(packetNum);
+					ackToSend = new DatagramPacket(ackBuffer, ACKSIZE, ipToAck, portToAck);
+					socket.send(ackToSend);
+				}				
 
+				// write the datagram payload to the file
 				fout.write(buffer, HEADERSIZE, payloadSize);
-				// System.out.println("ID: " + connectionID + "\nFilesize: " + filesize +
-				// "\nPacket num: " + packetNum
-				// + "\nReamaining: " + buffBoi.remaining() + "\nLength: " +
-				// receivedPacket.getLength() + "\n\n");
-				// if it's not a full packet, it's the last one
-				// so we write as much as we can and then break
+
+				// break if we have received the whole file
 				if (bytesRecieved == filesize) {
 					break;
 				} 
-				// clear the buffer
+
+				// clear the buffers and re-wrap the bytebuffers
 				buffer = new byte[PACKETSIZE + HEADERSIZE];
-				buffBoi = ByteBuffer.wrap(buffer);
+				byteBuffer = ByteBuffer.wrap(buffer);
+
+				ackBuffer = new byte[ACKSIZE];
+				ackByteBuffer = ByteBuffer.wrap(ackBuffer);
+
 			} catch (IOException e) {
 				System.err.println("Error receiving data from socket: " + e.getMessage());
 				System.exit(0);

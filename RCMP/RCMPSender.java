@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 public class RCMPSender {
 
     public static final int PACKETSIZE = 1450;
-    public static final int HEADERSIZE = 12;
-    public static final byte[] ACK = "ACK".getBytes();
+    public static final int HEADERSIZE = 13;
+    public static final int ACKSIZE = 8;
 
     public static void main(String[] args) {
 
@@ -45,8 +45,8 @@ public class RCMPSender {
             System.exit(0);
         }
 
+        // create a File object, determine its total size (in bytes), and open a stream for reading
         String fileName = args[2];
-
         File openFile = new File(fileName);
         int fileSize = (int) openFile.length();
         FileInputStream fin = null;
@@ -65,48 +65,85 @@ public class RCMPSender {
             System.exit(0);
         }
 
+        // set up variables used for packet creation and sending
         byte[] buffer = null, ackBuffer = null;
         DatagramPacket packetToSend = null, ackToReceive = null;
-        ByteBuffer buffyTheBiteSlayer = null;
-        int eof = 1;
+        ByteBuffer byteBuffer = null, ackByteBuffer = null;
         Random theMostRandom = new Random();
-        int connectionID = theMostRandom.nextInt();
-        int packetNum = 0;
+        int eof = 1, connectionID = theMostRandom.nextInt(), packetNum = 0, receivedID = -1, 
+            receivedPacketNum = -1, gapCounter = 0, nonAckedPackets = 0;
+        byte packetShouldBeAcked = (byte)1;
 
         // loop until we send a packet smaller than the defined PACKETSIZE
         while (true) {
 
             try {
-                buffer = new byte[PACKETSIZE + HEADERSIZE];
-                buffyTheBiteSlayer = ByteBuffer.wrap(buffer);
-                buffyTheBiteSlayer.putInt(connectionID);
-                buffyTheBiteSlayer.putInt(fileSize);
-                buffyTheBiteSlayer.putInt(packetNum);
 
-                ackBuffer = new byte[ACK.length];
+                // loop to 'waste' time so the messages don't get sent too fast for the 
+                // receiver to handle them
+                // TODO: find a better way to do this or remove it
+                int j = 0;
+                for (int i = 0; i < 300000; i++) {
+                    j += i;
+                }
+
+                // set up the buffer used for datagram sending and fill its header
+                buffer = new byte[PACKETSIZE + HEADERSIZE];
+                byteBuffer = ByteBuffer.wrap(buffer);
+                byteBuffer.putInt(connectionID);
+                byteBuffer.putInt(fileSize);
+                byteBuffer.putInt(packetNum);
+
+                // set up buffer and bytebuffer used for receiving acks
+                ackBuffer = new byte[ACKSIZE];
+                ackByteBuffer = ByteBuffer.wrap(ackBuffer);
+
                 // make sure to figure out how much data we read in
                 eof = fin.read(buffer, HEADERSIZE, PACKETSIZE);
+
+                // make sure the packet is acked when it's the last one
+                if (eof < PACKETSIZE) packetShouldBeAcked = (byte)1;
+                byteBuffer.put(packetShouldBeAcked);
+
             } catch (IOException e) {
                 System.err.println("Error receiving data from file: " + e);
                 System.exit(0);
-
             }
 
             try {
                 // create the packet with the data and send it
                 packetToSend = new DatagramPacket(buffer, eof + HEADERSIZE, InetAddress.getByName(hostName), portNum);
                 socket.send(packetToSend);
-                // receive an ACK packet from the receiver
-                ackToReceive = new DatagramPacket(ackBuffer, ACK.length);
-                socket.receive(ackToReceive);
 
-                // make sure the ACK packet has 'ACK' in it
-                if (new String(ackToReceive.getData()).compareTo("ACK") != 0) {
-                    System.err.println("ACK not received");
-                    System.exit(0);
+                // receive an ACK packet from the receiver if we marked the packet to be acked
+                if (packetShouldBeAcked == (byte)1) {
+                    ackToReceive = new DatagramPacket(ackBuffer, ACKSIZE);
+                    socket.receive(ackToReceive);
+                    receivedID = ackByteBuffer.getInt();
+                    receivedPacketNum = ackByteBuffer.getInt();
+
+                    // when we ack a packet, increase the gap counter, reset the number of
+                    // packets that have not been acked, and mark the next packets to not be acked
+                    gapCounter++;
+                    nonAckedPackets = 0;
+                    packetShouldBeAcked = (byte)0;
+
+                    // make sure the ACK packet has the correct connection id
+                    if (receivedID != connectionID) {
+                        System.err.println("ACK not received");
+                        System.exit(0);
+                    } else {
+                        System.out.println("Received ID: " + receivedID + ", received packetNum: " + receivedPacketNum);
+                    }
+
+                // if we don't receive an ACK packet, increment the counter of non-acked packet
                 } else {
-                    System.out.println("ACK");
+                    nonAckedPackets++;
                 }
+                
+                // mark the next one to be acked only if we have reached the gap counter - 1
+                if (nonAckedPackets == (gapCounter - 1)) packetShouldBeAcked = (byte)1;
+                
             } catch (PortUnreachableException e) {
                 System.err.println("Error reaching port: " + e);
                 System.exit(0);
@@ -115,7 +152,8 @@ public class RCMPSender {
                 System.exit(0);
             }
 
-            ++packetNum;
+            // increment the packet number counter
+            packetNum++;
 
             // if we've sent a packet that isn't 'full', break
             if (eof < PACKETSIZE) {
