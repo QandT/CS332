@@ -9,6 +9,8 @@ import java.net.PortUnreachableException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.util.Random;
+import java.nio.ByteBuffer;
 
 /**
  * This class implements a sender
@@ -19,12 +21,13 @@ import java.io.FileNotFoundException;
 public class RCMPSender {
 
     public static final int PACKETSIZE = 1450;
+    public static final int HEADERSIZE = 12;
     public static final byte[] ACK = "ACK".getBytes();
 
     public static void main(String[] args) {
 
         // make sure the user specifies the correct
-		// number of command line arguments
+        // number of command line arguments
         if (args.length < 3) {
             System.err.println("Usage: java RCMPSender <hostName> <portNum> <fileName>");
             System.exit(0);
@@ -45,8 +48,8 @@ public class RCMPSender {
         String fileName = args[2];
 
         File openFile = new File(fileName);
+        int fileSize = (int) openFile.length();
         FileInputStream fin = null;
-
         DatagramSocket socket = null;
 
         // try to open the specified file for reading
@@ -64,16 +67,25 @@ public class RCMPSender {
 
         byte[] buffer = null, ackBuffer = null;
         DatagramPacket packetToSend = null, ackToReceive = null;
+        ByteBuffer buffyTheBiteSlayer = null;
         int eof = 1;
+        Random theMostRandom = new Random();
+        int connectionID = theMostRandom.nextInt();
+        int packetNum = 0;
 
         // loop until we send a packet smaller than the defined PACKETSIZE
         while (true) {
 
             try {
-                buffer = new byte[PACKETSIZE];
+                buffer = new byte[PACKETSIZE + HEADERSIZE];
+                buffyTheBiteSlayer = ByteBuffer.wrap(buffer);
+                buffyTheBiteSlayer.putInt(connectionID);
+                buffyTheBiteSlayer.putInt(fileSize);
+                buffyTheBiteSlayer.putInt(packetNum);
+
                 ackBuffer = new byte[ACK.length];
                 // make sure to figure out how much data we read in
-                eof = fin.read(buffer);
+                eof = fin.read(buffer, HEADERSIZE, PACKETSIZE);
             } catch (IOException e) {
                 System.err.println("Error receiving data from file: " + e);
                 System.exit(0);
@@ -82,9 +94,8 @@ public class RCMPSender {
 
             try {
                 // create the packet with the data and send it
-                packetToSend = new DatagramPacket(buffer, eof, InetAddress.getByName(hostName), portNum);
+                packetToSend = new DatagramPacket(buffer, eof + HEADERSIZE, InetAddress.getByName(hostName), portNum);
                 socket.send(packetToSend);
-
                 // receive an ACK packet from the receiver
                 ackToReceive = new DatagramPacket(ackBuffer, ACK.length);
                 socket.receive(ackToReceive);
@@ -103,6 +114,8 @@ public class RCMPSender {
                 System.err.println("Error receiving data from socket: " + e);
                 System.exit(0);
             }
+
+            ++packetNum;
 
             // if we've sent a packet that isn't 'full', break
             if (eof < PACKETSIZE) {

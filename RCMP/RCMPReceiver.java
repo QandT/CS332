@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
+import java.nio.ByteBuffer;
 
 /**
  * This class implements a receiver
@@ -18,6 +19,7 @@ import java.io.FileNotFoundException;
 public class RCMPReceiver {
 
 	public static final int PACKETSIZE = 1450;
+	public static final int HEADERSIZE = 12;
 	public static final byte[] ACK = "ACK".getBytes();
 
 	public static void main(String[] args) {
@@ -59,10 +61,12 @@ public class RCMPReceiver {
 			System.exit(0);
 		}
 
-		byte[] buffer = new byte[PACKETSIZE];
+		byte[] buffer = new byte[PACKETSIZE + HEADERSIZE];
+		ByteBuffer buffBoi = ByteBuffer.wrap(buffer);
 		DatagramPacket receivedPacket = null, ackToSend = null;
-		int portToAck = 0;
+		int portToAck = -1;
 		InetAddress ipToAck = null;
+		int connectionID = -1, packetNum = -1, filesize = -1, bytesRecieved = 0, payloadSize = -1;
 
 		// loop until we get a packet smaller than the defined PACKETSIZE
 		while (true) {
@@ -72,6 +76,12 @@ public class RCMPReceiver {
 				// receive the packet
 				receivedPacket = new DatagramPacket(buffer, buffer.length);
 				socket.receive(receivedPacket);
+				connectionID = buffBoi.getInt();
+				filesize = buffBoi.getInt();
+				packetNum = buffBoi.getInt();
+				payloadSize = receivedPacket.getLength() - HEADERSIZE;
+
+				bytesRecieved += payloadSize;
 
 				// create an ACK packet and send it to the
 				// original sender
@@ -80,23 +90,19 @@ public class RCMPReceiver {
 				ackToSend = new DatagramPacket(ACK, ACK.length, ipToAck, portToAck);
 				socket.send(ackToSend);
 
+				fout.write(buffer, HEADERSIZE, payloadSize);
+				// System.out.println("ID: " + connectionID + "\nFilesize: " + filesize +
+				// "\nPacket num: " + packetNum
+				// + "\nReamaining: " + buffBoi.remaining() + "\nLength: " +
+				// receivedPacket.getLength() + "\n\n");
 				// if it's not a full packet, it's the last one
 				// so we write as much as we can and then break
-				if (receivedPacket.getLength() < PACKETSIZE) {
-
-					for (int j = 0; j < receivedPacket.getLength(); j++) {
-						fout.write(receivedPacket.getData()[j]);
-					}
-
+				if (bytesRecieved == filesize) {
 					break;
-
-				} else {
-					// write the received packet data to the file
-					fout.write(receivedPacket.getData());
-				}
-
+				} 
 				// clear the buffer
-				buffer = new byte[PACKETSIZE];
+				buffer = new byte[PACKETSIZE + HEADERSIZE];
+				buffBoi = ByteBuffer.wrap(buffer);
 			} catch (IOException e) {
 				System.err.println("Error receiving data from socket: " + e.getMessage());
 				System.exit(0);
