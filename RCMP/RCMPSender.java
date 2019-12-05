@@ -15,8 +15,8 @@ import java.util.Random;
 import java.nio.ByteBuffer;
 
 /**
- * This class implements a sender that sends a file over UDP
- * using the RCMP protocol as defined by Professor Norman
+ * This class implements a sender that sends a file over UDP using the RCMP
+ * protocol as defined by Professor Norman
  *
  * @author: Quentin Barnes
  * @author: Ty Vredeveld
@@ -63,7 +63,7 @@ public class RCMPSender {
             socket = new DatagramSocket();
             // set the socket to throw an exception when it doesn't
             // receive a packet when it expects to
-            socket.setSoTimeout(250);
+            socket.setSoTimeout(150);
         } catch (SocketException e) {
             System.err.println("Error creating socket with port number " + portNum + ": " + e);
             System.exit(0);
@@ -78,11 +78,12 @@ public class RCMPSender {
         ByteBuffer byteBuffer = null, ackByteBuffer = null;
         Random theMostRandom = new Random();
         int eof = 1, connectionID = theMostRandom.nextInt(), packetNum = 0, receivedID = -1, receivedPacketNum = -1,
-                gapCounter = 0, nonAckedPackets = 0, lastAckedPacket = -1, filePosition = -1;
+                gapCounter = 0, nonAckedPackets = 0, lastAckedPacket = -1, filePosition = -1, timeoutCount = 0;
         byte packetShouldBeAcked = (byte) 1;
+        boolean looping = true;
 
         // loop until we send a packet smaller than the defined PACKETSIZE
-        while (true) {
+        while (looping) {
 
             try {
 
@@ -132,6 +133,7 @@ public class RCMPSender {
 
                     // when we ack a packet, increase the gap counter, reset the number of
                     // packets that have not been acked, and mark the next packets to not be acked
+                    timeoutCount = 0;
                     gapCounter++;
                     nonAckedPackets = 0;
                     packetShouldBeAcked = (byte) 0;
@@ -143,6 +145,11 @@ public class RCMPSender {
                         System.exit(0);
                     } else {
                         System.out.println("Received ID: " + receivedID + ", received packetNum: " + receivedPacketNum);
+
+                        // if we've sent a packet that isn't 'full', break
+                        if (eof < PACKETSIZE) {
+                            looping = false;
+                        }
                     }
 
                     // if we don't receive an ACK packet, increment the counter of non-acked packet
@@ -162,6 +169,11 @@ public class RCMPSender {
                 // and where in the file we are reading data from
             } catch (SocketTimeoutException e) {
                 // do stuff to reset and handle the timeout
+                timeoutCount++;
+                if (eof < PACKETSIZE && timeoutCount == 10) {
+                    looping = false;
+                    System.out.println("Successful transfer unknown");
+                }
                 gapCounter = 0;
                 nonAckedPackets = 0;
                 packetShouldBeAcked = (byte) 1;
@@ -180,11 +192,6 @@ public class RCMPSender {
 
             // increment the packet number counter
             packetNum++;
-
-            // if we've sent a packet that isn't 'full', break
-            if (eof < PACKETSIZE) {
-                break;
-            }
 
         }
 
