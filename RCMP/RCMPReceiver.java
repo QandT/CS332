@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
  */
 public class RCMPReceiver {
 
+	// constants to use for sizes
 	public static final int PACKETSIZE = 1450;
 	public static final int HEADERSIZE = 13;
 	public static final int ACKSIZE = 8;
@@ -133,7 +134,7 @@ public class RCMPReceiver {
 			}
 
 		}
-
+		// close the socket when we're done receiving the file
 		socket.close();
 	}
 
