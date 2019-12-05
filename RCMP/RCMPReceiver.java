@@ -9,11 +9,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
-import java.util.Random;
 
 /**
- * This class implements a receiver that receives a file over UDP
- * using the RCMP protocol as defined by Professor Norman
+ * This class implements a receiver that receives a file over UDP using the RCMP
+ * protocol as defined by Professor Norman
+ * 
+ * Written for CS 332, Calvin University, Dec 05 2019
  *
  * @author: Quentin Barnes
  * @author: Ty Vredeveld
@@ -55,8 +56,6 @@ public class RCMPReceiver {
 		try {
 			fout = new FileOutputStream(openFile);
 			socket = new DatagramSocket(portNum);
-			// TODO: remove if we don't use
-			// socket.setReceiveBufferSize(212992); // maybe do this if we need to
 		} catch (SocketException e) {
 			System.err.println("Error creating socket with port number " + portNum + ": " + e);
 			System.exit(0);
@@ -75,14 +74,10 @@ public class RCMPReceiver {
 				nextExpectedPacket = 0;
 		byte toAck;
 
-		Random r = new Random();
-		int x = r.nextInt(5);
-
 		// loop until we have received the complete file
 		while (true) {
 
 			try {
-
 				// receive the packet
 				receivedPacket = new DatagramPacket(buffer, buffer.length);
 				socket.receive(receivedPacket);
@@ -97,7 +92,7 @@ public class RCMPReceiver {
 				payloadSize = receivedPacket.getLength() - HEADERSIZE;
 
 				// if the packet is what we expect to receive or a
-				// packet we have alread received, ack it
+				// packet we have already received, ack it
 				if (packetNum <= nextExpectedPacket) {
 					// create an ACK packet and send it to the original sender
 					// if the last packet was marked to be acked
