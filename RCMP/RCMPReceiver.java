@@ -75,9 +75,8 @@ public class RCMPReceiver {
 				nextExpectedPacket = 0;
 		byte toAck;
 
-		// TODO: delete when done
 		Random r = new Random();
-		int x;
+		int x = r.nextInt(5);
 
 		// loop until we have received the complete file
 		while (true) {
@@ -108,9 +107,7 @@ public class RCMPReceiver {
 						ackByteBuffer.putInt(connectionID);
 						ackByteBuffer.putInt(packetNum);
 						ackToSend = new DatagramPacket(ackBuffer, ACKSIZE, ipToAck, portToAck);
-						x = r.nextInt(10);
-						if (x < 8)
-							socket.send(ackToSend);
+						socket.send(ackToSend);
 					}
 
 					// only write the data to the file if the packet
