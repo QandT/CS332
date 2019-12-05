@@ -9,9 +9,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
+import java.util.Random;
 
 /**
- * This class implements a receiver
+ * This class implements a receiver that receives a file over UDP
+ * using the RCMP protocol as defined by Professor Norman
  *
  * @author: Quentin Barnes
  * @author: Ty Vredeveld
@@ -68,10 +70,14 @@ public class RCMPReceiver {
 		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
 		ByteBuffer ackByteBuffer = ByteBuffer.wrap(ackBuffer);
 		DatagramPacket receivedPacket = null, ackToSend = null;
-		int portToAck = -1;
 		InetAddress ipToAck = null;
-		int connectionID = -1, packetNum = -1, filesize = -1, bytesRecieved = 0, payloadSize = -1;
+		int portToAck = -1, connectionID = -1, packetNum = -1, filesize = -1, bytesWritten = 0, payloadSize = -1,
+				nextExpectedPacket = 0;
 		byte toAck;
+
+		// TODO: delete when done
+		Random r = new Random();
+		int x;
 
 		// loop until we have received the complete file
 		while (true) {
@@ -86,29 +92,41 @@ public class RCMPReceiver {
 				connectionID = byteBuffer.getInt();
 				filesize = byteBuffer.getInt();
 				packetNum = byteBuffer.getInt();
-				toAck = byteBuffer.get();		
+				toAck = byteBuffer.get();
 
+				// determine the size of the datagram payload
 				payloadSize = receivedPacket.getLength() - HEADERSIZE;
-				bytesRecieved += payloadSize;
 
-				// create an ACK packet and send it to the original sender
-				// if the last packet was marked to be acked
-				if (toAck == (byte)1) {
-					portToAck = receivedPacket.getPort();
-					ipToAck = receivedPacket.getAddress();
-					ackByteBuffer.putInt(connectionID);
-					ackByteBuffer.putInt(packetNum);
-					ackToSend = new DatagramPacket(ackBuffer, ACKSIZE, ipToAck, portToAck);
-					socket.send(ackToSend);
-				}				
+				// if the packet is what we expect to receive or a
+				// packet we have alread received, ack it
+				if (packetNum <= nextExpectedPacket) {
+					// create an ACK packet and send it to the original sender
+					// if the last packet was marked to be acked
+					if (toAck == (byte) 1) {
+						portToAck = receivedPacket.getPort();
+						ipToAck = receivedPacket.getAddress();
+						ackByteBuffer.putInt(connectionID);
+						ackByteBuffer.putInt(packetNum);
+						ackToSend = new DatagramPacket(ackBuffer, ACKSIZE, ipToAck, portToAck);
+						x = r.nextInt(10);
+						if (x < 8)
+							socket.send(ackToSend);
+					}
 
-				// write the datagram payload to the file
-				fout.write(buffer, HEADERSIZE, payloadSize);
+					// only write the data to the file if the packet
+					// is one that hasn't been received yet
+					if (packetNum == nextExpectedPacket) {
+						// write the datagram payload to the file
+						fout.write(buffer, HEADERSIZE, payloadSize);
+						nextExpectedPacket++;
+						bytesWritten += payloadSize;
 
-				// break if we have received the whole file
-				if (bytesRecieved == filesize) {
-					break;
-				} 
+						// break if we have received and written the whole file
+						if (bytesWritten == filesize) {
+							break;
+						}
+					}
+				}
 
 				// clear the buffers and re-wrap the bytebuffers
 				buffer = new byte[PACKETSIZE + HEADERSIZE];

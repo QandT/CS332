@@ -1,9 +1,11 @@
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.net.PortUnreachableException;
 import java.io.File;
@@ -13,7 +15,8 @@ import java.util.Random;
 import java.nio.ByteBuffer;
 
 /**
- * This class implements a sender
+ * This class implements a sender that sends a file over UDP
+ * using the RCMP protocol as defined by Professor Norman
  *
  * @author: Quentin Barnes
  * @author: Ty Vredeveld
@@ -45,18 +48,22 @@ public class RCMPSender {
             System.exit(0);
         }
 
-        // create a File object, determine its total size (in bytes), and open a stream for reading
+        // create a File object, determine its total size (in bytes), and open a stream
+        // for reading
         String fileName = args[2];
         File openFile = new File(fileName);
         int fileSize = (int) openFile.length();
-        FileInputStream fin = null;
+        RandomAccessFile fin = null;
         DatagramSocket socket = null;
 
         // try to open the specified file for reading
         // and create a UDP socket for sending packets
         try {
-            fin = new FileInputStream(openFile);
+            fin = new RandomAccessFile(openFile, "rw");
             socket = new DatagramSocket();
+            // set the socket to throw an exception when it doesn't
+            // receive a packet when it expects to
+            socket.setSoTimeout(250);
         } catch (SocketException e) {
             System.err.println("Error creating socket with port number " + portNum + ": " + e);
             System.exit(0);
@@ -70,22 +77,22 @@ public class RCMPSender {
         DatagramPacket packetToSend = null, ackToReceive = null;
         ByteBuffer byteBuffer = null, ackByteBuffer = null;
         Random theMostRandom = new Random();
-        int eof = 1, connectionID = theMostRandom.nextInt(), packetNum = 0, receivedID = -1, 
-            receivedPacketNum = -1, gapCounter = 0, nonAckedPackets = 0;
-        byte packetShouldBeAcked = (byte)1;
+        int eof = 1, connectionID = theMostRandom.nextInt(), packetNum = 0, receivedID = -1, receivedPacketNum = -1,
+                gapCounter = 0, nonAckedPackets = 0, lastAckedPacket = -1, filePosition = -1;
+        byte packetShouldBeAcked = (byte) 1;
 
         // loop until we send a packet smaller than the defined PACKETSIZE
         while (true) {
 
             try {
 
-                // loop to 'waste' time so the messages don't get sent too fast for the 
+                // loop to 'waste' time so the messages don't get sent too fast for the
                 // receiver to handle them
                 // TODO: find a better way to do this or remove it
-                int j = 0;
-                for (int i = 0; i < 300000; i++) {
-                    j += i;
-                }
+                // int j = 0;
+                // for (int i = 0; i < 300000; i++) {
+                // j += i;
+                // }
 
                 // set up the buffer used for datagram sending and fill its header
                 buffer = new byte[PACKETSIZE + HEADERSIZE];
@@ -102,7 +109,8 @@ public class RCMPSender {
                 eof = fin.read(buffer, HEADERSIZE, PACKETSIZE);
 
                 // make sure the packet is acked when it's the last one
-                if (eof < PACKETSIZE) packetShouldBeAcked = (byte)1;
+                if (eof < PACKETSIZE)
+                    packetShouldBeAcked = (byte) 1;
                 byteBuffer.put(packetShouldBeAcked);
 
             } catch (IOException e) {
@@ -116,7 +124,7 @@ public class RCMPSender {
                 socket.send(packetToSend);
 
                 // receive an ACK packet from the receiver if we marked the packet to be acked
-                if (packetShouldBeAcked == (byte)1) {
+                if (packetShouldBeAcked == (byte) 1) {
                     ackToReceive = new DatagramPacket(ackBuffer, ACKSIZE);
                     socket.receive(ackToReceive);
                     receivedID = ackByteBuffer.getInt();
@@ -126,7 +134,8 @@ public class RCMPSender {
                     // packets that have not been acked, and mark the next packets to not be acked
                     gapCounter++;
                     nonAckedPackets = 0;
-                    packetShouldBeAcked = (byte)0;
+                    packetShouldBeAcked = (byte) 0;
+                    lastAckedPacket = packetNum;
 
                     // make sure the ACK packet has the correct connection id
                     if (receivedID != connectionID) {
@@ -136,17 +145,34 @@ public class RCMPSender {
                         System.out.println("Received ID: " + receivedID + ", received packetNum: " + receivedPacketNum);
                     }
 
-                // if we don't receive an ACK packet, increment the counter of non-acked packet
+                    // if we don't receive an ACK packet, increment the counter of non-acked packet
                 } else {
                     nonAckedPackets++;
                 }
-                
+
                 // mark the next one to be acked only if we have reached the gap counter - 1
-                if (nonAckedPackets == (gapCounter - 1)) packetShouldBeAcked = (byte)1;
-                
+                if (nonAckedPackets == (gapCounter - 1))
+                    packetShouldBeAcked = (byte) 1;
+
             } catch (PortUnreachableException e) {
                 System.err.println("Error reaching port: " + e);
                 System.exit(0);
+
+                // if the socket has timed out, reset our gap counter info
+                // and where in the file we are reading data from
+            } catch (SocketTimeoutException e) {
+                // do stuff to reset and handle the timeout
+                gapCounter = 0;
+                nonAckedPackets = 0;
+                packetShouldBeAcked = (byte) 1;
+                packetNum = lastAckedPacket;
+                filePosition = (packetNum + 1) * PACKETSIZE;
+                try {
+                    fin.seek(filePosition);
+                } catch (IOException e2) {
+                    System.err.println("Error seeking to position " + filePosition + ": " + e2);
+                    System.exit(0);
+                }
             } catch (IOException e) {
                 System.err.println("Error receiving data from socket: " + e);
                 System.exit(0);
